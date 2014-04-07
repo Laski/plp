@@ -46,3 +46,12 @@ testsParentizar = test [
 	parentizar "f" ["x"] ~=? "f(x)",
 	parentizar "f" ["x", "y"] ~=? "f(x,y)"
 	]
+
+
+{- Test literal -}
+var = Var "x"
+
+literal1 = Pred "p" [var]
+literal2 = No literal1
+
+no_literal = Y literal1 literal2 

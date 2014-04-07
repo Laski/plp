@@ -9,15 +9,52 @@ data Termino = Var Nombre | Func Nombre [Termino]
 
 data Formula = Pred Nombre [Termino] | No Formula | Y Formula Formula | O Formula Formula | Imp Formula Formula | A Nombre Formula | E Nombre Formula
 
---esLiteral :: Dar tipo e implementar.
+esLiteral :: Formula -> Bool
+esLiteral (Pred _ _) = True
+esLiteral (No (Pred _ _)) = True
+esLiteral _ = False
 
- --foldTermino  :: Dar tipo e implementar.
+{- ejemplo de fold en listas
+sumatoria :: Num a => [a] -> a
+sumatoria [] = 0
+sumatoria (x:xs) = x + sumatoria xs
+
+sumatoria = foldr (+) 0
+-}
+
+foldTermino ::
+           (Nombre -> b)           -- funcion para Var Nombre
+        -> (Nombre -> [b] -> b)    -- funcion para Func Nombre [Termino]
+        -> Termino
+        -> b
+foldTermino fVar fFunc (Var nombre) = fVar nombre
+foldTermino fVar fFunc (Func nombre terminos) = fFunc nombre (map (foldTermino fVar fFunc) terminos)
+
+--test
+sumaTermino :: Termino -> Nombre
+sumaTermino = foldTermino id (\nombre resultados -> nombre ++ "(" ++ (concat resultados) ++ ")")
+
+var = Var "x"
+term1 = Func "f" [var]
+term2 = Func "g" [term1, var]
+term3 = Func "j" []
+
+
+--data Formula = Pred Nombre [Termino] | No Formula | Y Formula Formula | O Formula Formula | Imp Formula Formula | A Nombre Formula | E Nombre Formula
 
 --Esquema de recursión estructural para fórmulas.
-{-foldFormula
-  :: dar tipo e implementar. -}
+foldFormula ::
+		(Nombre -> [Termino] -> b)	-- funcion para Pred
+	 -> (b -> b)					-- funcion para No
+	 -> (b -> b -> b)				-- funcion para Y
+	 -> (b -> b -> b)				-- funcion para O
+	 -> (b -> b -> b)				-- funcion para Imp
+	 -> (Nombre -> b -> b)			-- funcion para A
+	 -> (Nombre -> b -> b)			-- funcion para E
+
 
 --Esquema de recursión primitiva para fórmulas.
+
 recFormula
   :: (Nombre -> [Termino] -> b)
      -> (Formula -> b -> b)
@@ -32,7 +69,7 @@ recFormula = error "Falta implementar."
 
 instance Show Termino where
   show = error "Falta implementar."
-				      
+                      
 join::[a]->[[a]]->[a]
 join separador = foldr (\x res->if null res then x else x++separador++res) []
 
@@ -61,12 +98,12 @@ data Interpretacion a = I {fTerm :: (Nombre->[a]->a), fPred :: (Nombre->[a]->Boo
 ejemploNat::Interpretacion Int
 ejemploNat = I fTerminos fPredicados where
   fTerminos nombreF | nombreF == "0" = const 0
-		    | nombreF == "suc" = \xs -> head xs + 1
-		    | nombreF == "suma" = sum
+            | nombreF == "suc" = \xs -> head xs + 1
+            | nombreF == "suma" = sum
   fPredicados nombreP | nombreP == "esCero" = \xs -> head xs == 0
-		      | nombreP == "esPar" = \xs -> mod (head xs) 2 == 0
-		      | nombreP == "mayor" = \xs -> (head xs) > (head (tail xs))
-		      | nombreP == "menor" = \xs -> (head xs) < (head (tail xs))
+              | nombreP == "esPar" = \xs -> mod (head xs) 2 == 0
+              | nombreP == "mayor" = \xs -> (head xs) > (head (tail xs))
+              | nombreP == "menor" = \xs -> (head xs) < (head (tail xs))
 
 --Proyectores (ya están predefinidos).
 {-
