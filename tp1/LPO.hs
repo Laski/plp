@@ -71,7 +71,7 @@ foldFormula fPred fNo fY fO fImp fA fE (A nombre resultado) = fA nombre (fold re
 																where fold = foldFormula fPred fNo fY fO fImp fA fE
 foldFormula fPred fNo fY fO fImp fA fE (E nombre resultado) = fE nombre (fold resultado)
 																where fold = foldFormula fPred fNo fY fO fImp fA fE
-
+{- test
 concatFormula :: Formula -> Nombre
 concatFormula = foldFormula
 					(\nombre terminos -> concatTermino (Func nombre terminos))
@@ -81,7 +81,7 @@ concatFormula = foldFormula
 					(\resultado1 resultado2 -> "(" ++ resultado1 ++ " => " ++ resultado2 ++ ")")
 					(\nombre resultado -> "((A" ++ nombre ++ ")" ++ resultado ++ ")")
 					(\nombre resultado -> "((E" ++ nombre ++ ")" ++ resultado ++ ")")
-					
+-}					
 form1 = Pred "p" [term2]
 form2 = No form1
 form3 = Y form1 form2
@@ -113,7 +113,7 @@ recFormula fPred fNo fY fO fImp fA fE (A nombre formula) = fA formula nombre (re
 																where rec = recFormula fPred fNo fY fO fImp fA fE
 recFormula fPred fNo fY fO fImp fA fE (E nombre formula) = fE formula nombre (rec formula)
 																where rec = recFormula fPred fNo fY fO fImp fA fE
-
+{-
 concatFormulaRec :: Formula -> Nombre
 concatFormulaRec = recFormula
 					(\nombre terminos -> concatTermino (Func nombre terminos))
@@ -123,12 +123,12 @@ concatFormulaRec = recFormula
 					(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ " => " ++ resultado2 ++ ")")
 					(\formula nombre resultado -> "((A" ++ nombre ++ ")" ++ resultado ++ ")")
 					(\formula nombre resultado -> "((E" ++ nombre ++ ")" ++ resultado ++ ")")
-					
+-}
+				
 -- EJERCICIO 5
 instance Show Termino where
   show = foldTermino (map toUpper) (\nombre resultados -> parentizar nombre resultados)
-  
-  
+    
 join::[a]->[[a]]->[a]
 join separador = foldr (\x res->if null res then x else x++separador++res) []
 
@@ -138,9 +138,16 @@ parentizar s res = if null res then s else s++"("++(join "," res)++")"
 
 instance Show Formula where
 -- Operadores lógicos: "¬","∧","∨","⊃","∀","∃"
-    show = error "Falta implementar."
-
+    show = recFormula
+				(\nombre terminos -> parentizar ((map toUpper) nombre)  (map show terminos))
+				(\formula resultado -> "¬" ++ (if (not (esLiteral formula)) then "(" ++ resultado ++ ")" else resultado))
+				(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ "∧" ++ resultado2 ++ ")")
+				(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ "∨" ++ resultado2 ++ ")")
+				(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ "⊃" ++ resultado2 ++ ")")
+				(\formula nombre resultado -> "∀" ++ nombre ++ "." ++ resultado)
+				(\formula nombre resultado -> "∃" ++ nombre ++ "." ++ resultado)
 --Ejemplo: A "x" (Imp (Pred "p" [Var "x"]) (Pred "p" [Var "x"])) se ve como ∀X.(P(X)⊃P(X))
+--CONSULTAR
 
 --eliminarImplicaciones :: Dar tipo e implementar.
 
