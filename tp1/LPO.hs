@@ -204,6 +204,21 @@ aFNN (E "Y" (No(E "X" (Imp (Pred "P" [Var "x"]) (Pred "Q" [Var "x", Var "y"]))))
 
 
 --fv:: Dar tipo e implementar.
+fv::Formula->[Nombre]
+fv = foldFormula 
+	(\nombre terminos -> nub (concat (map listarVariables terminos)) )
+	(\res -> res) 
+	(\res1 res2 ->nub (res1 ++ res2))
+	(\res1 res2 ->nub (res1 ++ res2))
+	(\res1 res2 ->nub (res1 ++ res2))
+	(\nombre res ->filter (\e -> e /= nombre) res)
+	(\nombre res ->filter (\e -> e /= nombre) res)
+
+listarVariables::Termino->[Nombre]
+listarVariables = foldTermino (\nombre -> [nombre]) (\nombre resultados -> concat resultados)
+-- test:
+-- fv (A "y" (Imp (Pred "p" [Var "x", Var "y"]) (Pred "p" [Var "x"]))) == ["x"]
+-- fv (E "x" (Imp (Pred "p" [Var "x", Var "y"]) (Pred "p" [Var "x"]))) == ["y"]
 
 --Interpretación en un dominio a. Una función para términos y otra para predicados.
 --Basta con que las funciones estén bien definidas para su dominio esperado.
