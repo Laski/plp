@@ -151,8 +151,38 @@ instance Show Formula where
 
 --eliminarImplicaciones :: Dar tipo e implementar.
 
-aFNN::Formula->Formula
-aFNN = error "Falta implementar."
+
+aFNN :: Formula -> Formula
+aFNN = foldFormula
+            (\nombre terminos -> Pred nombre terminos) -- Pred
+            aFNNauxNo                                  -- No
+            (\resultado1 resultado2 -> Y resultado1 resultado2)   -- Y
+            (\resultado1 resultado2 -> O resultado1 resultado2)   -- O
+            (\resultado1 resultado2 -> aFNN (eliminarImplicaciones (IMP resultado1 resultado2)))   -- Imp
+            (\nombre resultado -> A nombre resultado)
+            (\nombre resultado -> E nombre resultado)
+            
+aFNNauxNo :: Formula -> Formula -> Formula
+aFNNauxNo = foldFormula
+                (\nombre terminos -> No (Pred nombre terminos)) -- Pred
+                (\resultado -> resultado)               -- No
+                (\resultado1 resultado2 -> aFNN (O (No resultado1) (No resultado2)))  -- Y
+                (\resultado1 resultado2 -> aFNN (Y (No resultado1) (No resultado2)))  -- O
+                (\resultado1 resultado2 -> aFNN (No aFNN (Imp resultado1 resultado2)) -- Imp
+                (\nombre resultado -> aFNN (E nombre (No resultado)))                 -- A
+                (\nombre resultado -> aFNN (A nombre (No resultado)))                 -- E
+                
+                
+                
+¬ E(x) P(x) = A(x) ¬P(x)
+¬ (p v q) = ¬p ^ ¬q
+
+¬¬P (X) -> P (X)
+¬(Q(X, Y ) ∧ R(Z)) -> ¬Q(X, Y ) ∨ ¬R(Z))
+∃Y.(¬∃X.(P (X) ⊃ Q(X, Y ))) -> ∃Y.(∀X.(P (X) ∧ ¬Q(X, Y )))
+∀X.(∃Y (P (X) ⊃ Q(X, Y ))) -> ∀X.(∃Y.(¬P (X) ∨ Q(X, Y )))
+
+
 
 --fv:: Dar tipo e implementar.
 
