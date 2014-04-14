@@ -154,47 +154,53 @@ eliminarImplicaciones::Formula->Formula
 eliminarImplicaciones = foldFormula 
 	(\nombre terminos -> (Pred nombre terminos)) 
 	(\res -> No res) 
-	(\res1 res2 ->Y res1 res2)
-	(\res1 res2 ->O res1 res2)
-	(\res1 res2 ->O (No res1) res2)
-	(\nombre res ->A nombre res)
-	(\nombre res ->E nombre res)
+	(\res1 res2 -> Y res1 res2)
+	(\res1 res2 -> O res1 res2)
+	(\res1 res2 -> O (No res1) res2)
+	(\nombre res -> A nombre res)
+	(\nombre res -> E nombre res)
 
 --eliminarImplicaciones (Imp form1 form1) == No P(g(f(X),X)) O P(g(f(X),X))
 --eliminarImplicaciones (Imp form1 form2) == No P(g(f(X),X)) O No P(g(f(X),X))
 
-
-
 aFNN :: Formula -> Formula
 aFNN = foldFormula
             (\nombre terminos -> Pred nombre terminos) -- Pred
-            aFNNauxNo                                  -- No
+            (\resultado -> if esLiteral (No resultado) then (No resultado) else (aFNNauxNo resultado)) -- No
             (\resultado1 resultado2 -> Y resultado1 resultado2)   -- Y
             (\resultado1 resultado2 -> O resultado1 resultado2)   -- O
-            (\resultado1 resultado2 -> aFNN (eliminarImplicaciones (IMP resultado1 resultado2)))   -- Imp
-            (\nombre resultado -> A nombre resultado)
-            (\nombre resultado -> E nombre resultado)
+            (\resultado1 resultado2 -> aFNN (eliminarImplicaciones (Imp resultado1 resultado2)))   -- Imp
+            (\nombre resultado -> A nombre resultado)                                              -- A
+            (\nombre resultado -> E nombre resultado)                                              -- E
             
-aFNNauxNo :: Formula -> Formula -> Formula
-aFNNauxNo = foldFormula
-                (\nombre terminos -> No (Pred nombre terminos)) -- Pred
-                (\resultado -> resultado)               -- No
-                (\resultado1 resultado2 -> aFNN (O (No resultado1) (No resultado2)))  -- Y
-                (\resultado1 resultado2 -> aFNN (Y (No resultado1) (No resultado2)))  -- O
-                (\resultado1 resultado2 -> aFNN (No aFNN (Imp resultado1 resultado2)) -- Imp
-                (\nombre resultado -> aFNN (E nombre (No resultado)))                 -- A
-                (\nombre resultado -> aFNN (A nombre (No resultado)))                 -- E
+aFNNauxNo :: Formula -> Formula
+aFNNauxNo (Pred nombre terminos) = Pred nombre terminos
+aFNNauxNo (No formula) = formula
+aFNNauxNo (Y formula1 formula2) = aFNN (O (No formula1) (No formula2))
+aFNNauxNo (O formula1 formula2) = aFNN (Y (No formula1) (No formula2))
+aFNNauxNo (Imp formula1 formula2) = aFNN (No (aFNN (Imp formula1 formula2)))
+aFNNauxNo (A nombre formula) = aFNN (E nombre (No formula))
+aFNNauxNo (E nombre formula) = aFNN (A nombre (No formula))
+
                 
-                
-                
-¬ E(x) P(x) = A(x) ¬P(x)
-¬ (p v q) = ¬p ^ ¬q
+{-
+-- ¬E(x)P(x) -> A(x)¬P(x)                
+aFNN (No(E "x" (Pred "P" [Var "x"]))) == ∀x.¬P(X)
+
+-- ¬(P(x) v Q(x)) -> (¬P(x) ^ ¬Q(x))
+aFNN (No(O (Pred "P" [Var "x"]) (Pred "Q" [Var "x"]))) == (¬P(X)∧¬Q(X))
 
 ¬¬P (X) -> P (X)
-¬(Q(X, Y ) ∧ R(Z)) -> ¬Q(X, Y ) ∨ ¬R(Z))
-∃Y.(¬∃X.(P (X) ⊃ Q(X, Y ))) -> ∃Y.(∀X.(P (X) ∧ ¬Q(X, Y )))
-∀X.(∃Y (P (X) ⊃ Q(X, Y ))) -> ∀X.(∃Y.(¬P (X) ∨ Q(X, Y )))
+aFNN (No(No(Pred "P" [Var "x"]))) == P(X)
 
+¬(Q(X, Y) ∧ R(Z)) -> ¬Q(X, Y) ∨ ¬R(Z)
+aFNN (No(Y(Pred "Q" [Var "x", Var "y"]) (Pred "R" [Var "Z"]))) == (¬Q(X,Y)∨¬R(Z))
+
+∃Y.(¬∃X.(P (X) ⊃ Q(X, Y ))) -> ∃Y.(∀X.(P (X) ∧ ¬Q(X, Y )))
+aFNN (E "Y" (No(E "X" (Imp (Pred "P" [Var "x"]) (Pred "Q" [Var "x", Var "y"]))))) == ∃Y.∀X.(P(X)∧¬Q(X,Y))
+
+∀X.(∃Y (P (X) ⊃ Q(X, Y ))) -> ∀X.(∃Y.(¬P (X) ∨ Q(X, Y )))
+-}
 
 
 --fv:: Dar tipo e implementar.
