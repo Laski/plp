@@ -150,6 +150,19 @@ instance Show Formula where
 --CONSULTAR
 
 --eliminarImplicaciones :: Dar tipo e implementar.
+eliminarImplicaciones::Formula->Formula
+eliminarImplicaciones = foldFormula 
+	(\nombre terminos -> (Pred nombre terminos)) 
+	(\res -> No res) 
+	(\res1 res2 ->Y res1 res2)
+	(\res1 res2 ->O res1 res2)
+	(\res1 res2 ->O (No res1) res2)
+	(\nombre res ->A nombre res)
+	(\nombre res ->E nombre res)
+
+--eliminarImplicaciones (Imp form1 form1) == No P(g(f(X),X)) O P(g(f(X),X))
+--eliminarImplicaciones (Imp form1 form2) == No P(g(f(X),X)) O No P(g(f(X),X))
+
 
 aFNN::Formula->Formula
 aFNN = error "Falta implementar."
