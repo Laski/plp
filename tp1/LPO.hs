@@ -14,14 +14,6 @@ esLiteral (Pred _ _) = True
 esLiteral (No (Pred _ _)) = True
 esLiteral _ = False
 
-{- ejemplo de fold en listas
-sumatoria :: Num a => [a] -> a
-sumatoria [] = 0
-sumatoria (x:xs) = x + sumatoria xs
-
-sumatoria = foldr (+) 0
--}
-
 foldTermino ::
            (Nombre -> b)           -- funcion para Var Nombre
         -> (Nombre -> [b] -> b)    -- funcion para Func Nombre [Termino]
@@ -29,23 +21,6 @@ foldTermino ::
         -> b
 foldTermino fVar fFunc (Var nombre) = fVar nombre
 foldTermino fVar fFunc (Func nombre terminos) = fFunc nombre (map (foldTermino fVar fFunc) terminos)
-
-{-test-}
-concatTermino :: Termino -> Nombre
-concatTermino = foldTermino id (\nombre resultados -> nombre ++ "(" ++ (concat resultados) ++ ")")
-
-var = Var "x"
-term1 = Func "f" [var]
-term2 = Func "g" [term1, var]
-term3 = Func "j" []
-term4 = Func "g" [term2, term3]
-
-
-{-
-concatTermino term3 == "g(f(x)x)"
--}
-
---data Formula = Pred Nombre [Termino] | No Formula | Y Formula Formula | O Formula Formula | Imp Formula Formula | A Nombre Formula | E Nombre Formula
 
 --Esquema de recursión estructural para fórmulas.
 foldFormula ::
@@ -58,7 +33,6 @@ foldFormula ::
 	 -> (Nombre -> b -> b)			-- funcion para E
 	 -> Formula
 	 -> b
-	 
 foldFormula fPred fNo fY fO fImp fA fE (Pred nombre terminos) = fPred nombre terminos
 foldFormula fPred fNo fY fO fImp fA fE (No resultado) = fNo (foldFormula fPred fNo fY fO fImp fA fE resultado)
 foldFormula fPred fNo fY fO fImp fA fE (Y resultado1 resultado2) = fY (fold resultado1) (fold resultado2)
@@ -71,25 +45,8 @@ foldFormula fPred fNo fY fO fImp fA fE (A nombre resultado) = fA nombre (fold re
 																where fold = foldFormula fPred fNo fY fO fImp fA fE
 foldFormula fPred fNo fY fO fImp fA fE (E nombre resultado) = fE nombre (fold resultado)
 																where fold = foldFormula fPred fNo fY fO fImp fA fE
-{- test
-concatFormula :: Formula -> Nombre
-concatFormula = foldFormula
-					(\nombre terminos -> concatTermino (Func nombre terminos))
-					(\resultado -> "No " ++ resultado)
-					(\resultado1 resultado2 -> "(" ++ resultado1 ++ " Y " ++ resultado2 ++ ")")
-					(\resultado1 resultado2 -> "(" ++ resultado1 ++ " O " ++ resultado2 ++ ")")
-					(\resultado1 resultado2 -> "(" ++ resultado1 ++ " => " ++ resultado2 ++ ")")
-					(\nombre resultado -> "((A" ++ nombre ++ ")" ++ resultado ++ ")")
-					(\nombre resultado -> "((E" ++ nombre ++ ")" ++ resultado ++ ")")
--}					
-form1 = Pred "p" [term2]
-form2 = No form1
-form3 = Y form1 form2
-
--- concatFormula form3 == "(p(g(f(x)x)) Y No p(g(f(x)x)))"
 
 --Esquema de recursión primitiva para fórmulas.
-
 recFormula ::
 		(Nombre -> [Termino] -> b)				-- funcion para Pred
      -> (Formula -> b -> b)						-- funcion para No
@@ -113,19 +70,7 @@ recFormula fPred fNo fY fO fImp fA fE (A nombre formula) = fA formula nombre (re
 																where rec = recFormula fPred fNo fY fO fImp fA fE
 recFormula fPred fNo fY fO fImp fA fE (E nombre formula) = fE formula nombre (rec formula)
 																where rec = recFormula fPred fNo fY fO fImp fA fE
-{-
-concatFormulaRec :: Formula -> Nombre
-concatFormulaRec = recFormula
-					(\nombre terminos -> concatTermino (Func nombre terminos))
-					(\formula resultado -> "No " ++ resultado)
-					(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ " Y " ++ resultado2 ++ ")")
-					(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ " O " ++ resultado2 ++ ")")
-					(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ " => " ++ resultado2 ++ ")")
-					(\formula nombre resultado -> "((A" ++ nombre ++ ")" ++ resultado ++ ")")
-					(\formula nombre resultado -> "((E" ++ nombre ++ ")" ++ resultado ++ ")")
--}
-				
--- EJERCICIO 5
+
 instance Show Termino where
   show = foldTermino (map toUpper) (\nombre resultados -> parentizar nombre resultados)
     
@@ -144,12 +89,10 @@ instance Show Formula where
 				(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ "∧" ++ resultado2 ++ ")")
 				(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ "∨" ++ resultado2 ++ ")")
 				(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ "⊃" ++ resultado2 ++ ")")
-				(\formula nombre resultado -> "∀" ++ nombre ++ "." ++ resultado)
-				(\formula nombre resultado -> "∃" ++ nombre ++ "." ++ resultado)
---Ejemplo: A "x" (Imp (Pred "p" [Var "x"]) (Pred "p" [Var "x"])) se ve como ∀X.(P(X)⊃P(X))
---CONSULTAR
-
---eliminarImplicaciones :: Dar tipo e implementar.
+				(\formula nombre resultado -> "∀" ++ (map toUpper) nombre ++ "." ++ resultado)
+				(\formula nombre resultado -> "∃" ++ (map toUpper) nombre ++ "." ++ resultado)
+                
+                
 eliminarImplicaciones::Formula->Formula
 eliminarImplicaciones = foldFormula 
 	(\nombre terminos -> (Pred nombre terminos)) 
@@ -159,9 +102,6 @@ eliminarImplicaciones = foldFormula
 	(\res1 res2 -> O (No res1) res2)
 	(\nombre res -> A nombre res)
 	(\nombre res -> E nombre res)
-
---eliminarImplicaciones (Imp form1 form1) == No P(g(f(X),X)) O P(g(f(X),X))
---eliminarImplicaciones (Imp form1 form2) == No P(g(f(X),X)) O No P(g(f(X),X))
 
 aFNN :: Formula -> Formula
 aFNN = foldFormula
@@ -182,58 +122,22 @@ aFNNauxNo (Imp formula1 formula2) = aFNN (No (aFNN (Imp formula1 formula2)))
 aFNNauxNo (A nombre formula) = aFNN (E nombre (No formula))
 aFNNauxNo (E nombre formula) = aFNN (A nombre (No formula))
 
-                
-{-
--- ¬E(x)P(x) -> A(x)¬P(x)                
-aFNN (No(E "x" (Pred "P" [Var "x"]))) == ∀x.¬P(X)
-
--- ¬(P(x) v Q(x)) -> (¬P(x) ^ ¬Q(x))
-aFNN (No(O (Pred "P" [Var "x"]) (Pred "Q" [Var "x"]))) == (¬P(X)∧¬Q(X))
-
-¬¬P (X) -> P (X)
-aFNN (No(No(Pred "P" [Var "x"]))) == P(X)
-
-¬(Q(X, Y) ∧ R(Z)) -> ¬Q(X, Y) ∨ ¬R(Z)
-aFNN (No(Y(Pred "Q" [Var "x", Var "y"]) (Pred "R" [Var "Z"]))) == (¬Q(X,Y)∨¬R(Z))
-
-∃Y.(¬∃X.(P (X) ⊃ Q(X, Y ))) -> ∃Y.(∀X.(P (X) ∧ ¬Q(X, Y )))
-aFNN (E "Y" (No(E "X" (Imp (Pred "P" [Var "x"]) (Pred "Q" [Var "x", Var "y"]))))) == ∃Y.∀X.(P(X)∧¬Q(X,Y))
-
-∀X.(∃Y (P (X) ⊃ Q(X, Y ))) -> ∀X.(∃Y.(¬P (X) ∨ Q(X, Y )))
--}
-
-
---fv:: Dar tipo e implementar.
 fv::Formula->[Nombre]
 fv = foldFormula 
-	(\nombre terminos -> nub (concat (map listarVariables terminos)) )
-	(\res -> res) 
-	(\res1 res2 ->nub (res1 ++ res2))
-	(\res1 res2 ->nub (res1 ++ res2))
-	(\res1 res2 ->nub (res1 ++ res2))
-	(\nombre res ->filter (\e -> e /= nombre) res)
-	(\nombre res ->filter (\e -> e /= nombre) res)
+        (\nombre terminos -> nub (concat (map listarVariables terminos)))
+        (\res -> res) 
+        (\res1 res2 -> nub (res1 ++ res2))
+        (\res1 res2 -> nub (res1 ++ res2))
+        (\res1 res2 -> nub (res1 ++ res2))
+        (\nombre res -> filter (\e -> e /= nombre) res)
+        (\nombre res -> filter (\e -> e /= nombre) res)
 
 listarVariables::Termino->[Nombre]
 listarVariables = foldTermino (\nombre -> [nombre]) (\nombre resultados -> concat resultados)
--- test:
--- fv (A "y" (Imp (Pred "p" [Var "x", Var "y"]) (Pred "p" [Var "x"]))) == ["x"]
--- fv (E "x" (Imp (Pred "p" [Var "x", Var "y"]) (Pred "p" [Var "x"]))) == ["y"]
 
 --Interpretación en un dominio a. Una función para términos y otra para predicados.
 --Basta con que las funciones estén bien definidas para su dominio esperado.
 data Interpretacion a = I {fTerm :: (Nombre->[a]->a), fPred :: (Nombre->[a]->Bool)}
-
---Ejemplo para pruebas:
-ejemploNat::Interpretacion Int
-ejemploNat = I fTerminos fPredicados where
-  fTerminos nombreF | nombreF == "0" = const 0
-            | nombreF == "suc" = \xs -> head xs + 1
-            | nombreF == "suma" = sum
-  fPredicados nombreP | nombreP == "esCero" = \xs -> head xs == 0
-              | nombreP == "esPar" = \xs -> mod (head xs) 2 == 0
-              | nombreP == "mayor" = \xs -> (head xs) > (head (tail xs))
-              | nombreP == "menor" = \xs -> (head xs) < (head (tail xs))
 
 --Proyectores (ya están predefinidos).
 {-
@@ -246,34 +150,42 @@ fPred (I _ fP) = fP
 
 type Asignacion a = Nombre -> a
 
---Ejemplo para pruebas:
-asignacion1::Asignacion Int
-asignacion1 "X" = 0
-asignacion1 "Y" = 1
-asignacion1 "Z" = 2
-
 evaluar::Asignacion a->(Nombre->[a]->a)->Termino->a
-evaluar = error "Falta implementar."
+evaluar asignacion funciones = foldTermino
+                                    (\nombre -> asignacion nombre)                    -- Var
+                                    (\nombre elementos -> funciones nombre elementos) -- Func
 
---Ejemplo: evaluar asignacion1 (fTerm ejemploNat) $ Func "suma" [Func "suc" [Var "X"], Var "Y"]
-
---actualizarAsignacion :: Implementar y dar el tipo.
+actualizarAsignacion::Nombre -> a -> Asignacion a -> Asignacion a
+actualizarAsignacion nombreNuevo valor asignacion = (\nombre -> if (nombre == nombreNuevo) then valor else asignacion nombre)
 
 --Se usa una asignación de valores a las variables libres. Pueden usar recursión explícita, pero aclaren por qué no encaja bien en fold ni rec.
 --Se puede hacer con fold cambiando el orden de los parámetros (flip), pero no es natural/sencillo. ¿por qué?
+
+{-vale::Eq a =>Interpretacion a -> [a] -> Asignacion a -> Formula -> Bool
+vale interpretacion dominio asignacion = foldFormula
+                                                (\nombre terminos -> (fPredicados intepretacion nombre) (map (evaluar asignacion (fTerminos interpretacion)) terminos))
+                                                not
+                                                (\bool1 bool2 -> and [bool1, bool2])
+                                                (\bool1 bool2 -> or [bool1, bool2])
+                                                (\bool1 bool2 -> if (not bool1) then True else bool2
+                                                ...
+                                                ...
+    Problema: tanto fold como rec asumen que pueden calcular los valores de las subfórmulas antes que el valor de las fórmulas que la incluyen.
+    Ahora bien, si una fórmula empieza con un ∀ o con un ∃, sus subfórmulas pueden tener variables libres, y en este caso no puede calcularse
+    su valor de verdad por sí solas (sino que debe necesariamente evaluarse el cuantificador primero). Es por este motivo que resolver "vale"
+    con rec o fold es difícil, pues la función asociada al constructor "Pred" debería poder manejar el caso en que haya variables libres.
+    Una forma podría ser que devuelva un "tercer valor de verdad" que indique que el valor es indefinido hasta que no se evalúe algún cuantificador.
+-}
+
 vale::Eq a =>Interpretacion a -> [a] -> Asignacion a -> Formula -> Bool
-vale = error "Falta implementar."
+vale interpretacion dominio asignacion (Pred nombre terminos) = (fPred interpretacion nombre) (map (evaluar asignacion (fTerm interpretacion)) terminos)
+vale interpretacion dominio asignacion (No formula) = not (vale interpretacion dominio asignacion formula)
+vale interpretacion dominio asignacion (Y formula1 formula2) = and [aplicar formula1, aplicar formula2]
+                                                                    where aplicar = vale interpretacion dominio asignacion
+vale interpretacion dominio asignacion (O formula1 formula2) = or [aplicar formula1, aplicar formula2]
+                                                                    where aplicar = vale interpretacion dominio asignacion
+vale interpretacion dominio asignacion (A nombre formula) = and [vale interpretacion dominio asignacion_nueva formula | asignacion_nueva <- asignaciones]
+                                                                    where asignaciones = [actualizarAsignacion nombre valor asignacion | valor <- dominio]
+vale interpretacion dominio asignacion (E nombre formula) = or [vale interpretacion dominio asignacion_nueva formula | asignacion_nueva <- asignaciones]
+                                                                    where asignaciones = [actualizarAsignacion nombre valor asignacion | valor <- dominio]
 
--- Ejemplos (agreguen alguno con otra interpretación).
-
--- vale ejemploNat [0,1] (\x -> if x == "X" then 0 else 1) (Pred "mayor" [Var "Y", Var "X"])
--- True
-
--- vale ejemploNat [0,1] (\x -> if x == "X" then 0 else 1) (Pred "mayor" [Var "X",Func "suc" [Var "X"]])
--- False
-
---vale ejemploNat [0,1] (\x -> 0) (E "Y" (Pred "mayor" [Var "Y", Var "X"]))
---True
-
---vale ejemploNat [0] (\x -> 0) (E "Y" (Pred "mayor" [Var "Y", Var "X"]))
---False
