@@ -9,30 +9,126 @@ data Termino = Var Nombre | Func Nombre [Termino]
 
 data Formula = Pred Nombre [Termino] | No Formula | Y Formula Formula | O Formula Formula | Imp Formula Formula | A Nombre Formula | E Nombre Formula
 
---esLiteral :: Dar tipo e implementar.
+esLiteral :: Formula -> Bool
+esLiteral (Pred _ _) = True
+esLiteral (No (Pred _ _)) = True
+esLiteral _ = False
 
- --foldTermino  :: Dar tipo e implementar.
+{- ejemplo de fold en listas
+sumatoria :: Num a => [a] -> a
+sumatoria [] = 0
+sumatoria (x:xs) = x + sumatoria xs
+
+sumatoria = foldr (+) 0
+-}
+
+foldTermino ::
+           (Nombre -> b)           -- funcion para Var Nombre
+        -> (Nombre -> [b] -> b)    -- funcion para Func Nombre [Termino]
+        -> Termino
+        -> b
+foldTermino fVar fFunc (Var nombre) = fVar nombre
+foldTermino fVar fFunc (Func nombre terminos) = fFunc nombre (map (foldTermino fVar fFunc) terminos)
+
+{-test-}
+concatTermino :: Termino -> Nombre
+concatTermino = foldTermino id (\nombre resultados -> nombre ++ "(" ++ (concat resultados) ++ ")")
+
+var = Var "x"
+term1 = Func "f" [var]
+term2 = Func "g" [term1, var]
+term3 = Func "j" []
+term4 = Func "g" [term2, term3]
+
+
+{-
+concatTermino term3 == "g(f(x)x)"
+-}
+
+--data Formula = Pred Nombre [Termino] | No Formula | Y Formula Formula | O Formula Formula | Imp Formula Formula | A Nombre Formula | E Nombre Formula
 
 --Esquema de recursión estructural para fórmulas.
-{-foldFormula
-  :: dar tipo e implementar. -}
+foldFormula ::
+		(Nombre -> [Termino] -> b)	-- funcion para Pred
+	 -> (b -> b)					-- funcion para No
+	 -> (b -> b -> b)				-- funcion para Y
+	 -> (b -> b -> b)				-- funcion para O
+	 -> (b -> b -> b)				-- funcion para Imp
+	 -> (Nombre -> b -> b)			-- funcion para A
+	 -> (Nombre -> b -> b)			-- funcion para E
+	 -> Formula
+	 -> b
+	 
+foldFormula fPred fNo fY fO fImp fA fE (Pred nombre terminos) = fPred nombre terminos
+foldFormula fPred fNo fY fO fImp fA fE (No resultado) = fNo (foldFormula fPred fNo fY fO fImp fA fE resultado)
+foldFormula fPred fNo fY fO fImp fA fE (Y resultado1 resultado2) = fY (fold resultado1) (fold resultado2)
+																where fold = foldFormula fPred fNo fY fO fImp fA fE
+foldFormula fPred fNo fY fO fImp fA fE (O resultado1 resultado2) = fO (fold resultado1) (fold resultado2)
+																where fold = foldFormula fPred fNo fY fO fImp fA fE
+foldFormula fPred fNo fY fO fImp fA fE (Imp resultado1 resultado2) = fImp (fold resultado1) (fold resultado2)
+																where fold = foldFormula fPred fNo fY fO fImp fA fE
+foldFormula fPred fNo fY fO fImp fA fE (A nombre resultado) = fA nombre (fold resultado)
+																where fold = foldFormula fPred fNo fY fO fImp fA fE
+foldFormula fPred fNo fY fO fImp fA fE (E nombre resultado) = fE nombre (fold resultado)
+																where fold = foldFormula fPred fNo fY fO fImp fA fE
+{- test
+concatFormula :: Formula -> Nombre
+concatFormula = foldFormula
+					(\nombre terminos -> concatTermino (Func nombre terminos))
+					(\resultado -> "No " ++ resultado)
+					(\resultado1 resultado2 -> "(" ++ resultado1 ++ " Y " ++ resultado2 ++ ")")
+					(\resultado1 resultado2 -> "(" ++ resultado1 ++ " O " ++ resultado2 ++ ")")
+					(\resultado1 resultado2 -> "(" ++ resultado1 ++ " => " ++ resultado2 ++ ")")
+					(\nombre resultado -> "((A" ++ nombre ++ ")" ++ resultado ++ ")")
+					(\nombre resultado -> "((E" ++ nombre ++ ")" ++ resultado ++ ")")
+-}					
+form1 = Pred "p" [term2]
+form2 = No form1
+form3 = Y form1 form2
+
+-- concatFormula form3 == "(p(g(f(x)x)) Y No p(g(f(x)x)))"
 
 --Esquema de recursión primitiva para fórmulas.
-recFormula
-  :: (Nombre -> [Termino] -> b)
-     -> (Formula -> b -> b)
-     -> (Formula -> Formula -> b -> b -> b)
-     -> (Formula -> Formula -> b -> b -> b)
-     -> (Formula -> Formula -> b -> b -> b)
-     -> (Formula -> Nombre -> b -> b)
-     -> (Formula -> Nombre -> b -> b)
+
+recFormula ::
+		(Nombre -> [Termino] -> b)				-- funcion para Pred
+     -> (Formula -> b -> b)						-- funcion para No
+     -> (Formula -> Formula -> b -> b -> b)		-- funcion para Y
+     -> (Formula -> Formula -> b -> b -> b)		-- funcion para O
+     -> (Formula -> Formula -> b -> b -> b) 	-- funcion para Imp
+     -> (Formula -> Nombre -> b -> b)			-- funcion para A
+     -> (Formula -> Nombre -> b -> b)			-- funcion para E
      -> Formula
      -> b
-recFormula = error "Falta implementar."
-
+     
+recFormula fPred fNo fY fO fImp fA fE (Pred nombre terminos) = fPred nombre terminos
+recFormula fPred fNo fY fO fImp fA fE (No formula) = fNo formula (recFormula fPred fNo fY fO fImp fA fE formula)
+recFormula fPred fNo fY fO fImp fA fE (Y formula1 formula2) = fY formula1 formula2 (rec formula1) (rec formula2)
+																where rec = recFormula fPred fNo fY fO fImp fA fE
+recFormula fPred fNo fY fO fImp fA fE (O formula1 formula2) = fO formula1 formula2 (rec formula1) (rec formula2)
+																where rec = recFormula fPred fNo fY fO fImp fA fE
+recFormula fPred fNo fY fO fImp fA fE (Imp formula1 formula2) = fImp formula1 formula2 (rec formula1) (rec formula2)
+																where rec = recFormula fPred fNo fY fO fImp fA fE
+recFormula fPred fNo fY fO fImp fA fE (A nombre formula) = fA formula nombre (rec formula)
+																where rec = recFormula fPred fNo fY fO fImp fA fE
+recFormula fPred fNo fY fO fImp fA fE (E nombre formula) = fE formula nombre (rec formula)
+																where rec = recFormula fPred fNo fY fO fImp fA fE
+{-
+concatFormulaRec :: Formula -> Nombre
+concatFormulaRec = recFormula
+					(\nombre terminos -> concatTermino (Func nombre terminos))
+					(\formula resultado -> "No " ++ resultado)
+					(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ " Y " ++ resultado2 ++ ")")
+					(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ " O " ++ resultado2 ++ ")")
+					(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ " => " ++ resultado2 ++ ")")
+					(\formula nombre resultado -> "((A" ++ nombre ++ ")" ++ resultado ++ ")")
+					(\formula nombre resultado -> "((E" ++ nombre ++ ")" ++ resultado ++ ")")
+-}
+				
+-- EJERCICIO 5
 instance Show Termino where
-  show = error "Falta implementar."
-				      
+  show = foldTermino (map toUpper) (\nombre resultados -> parentizar nombre resultados)
+    
 join::[a]->[[a]]->[a]
 join separador = foldr (\x res->if null res then x else x++separador++res) []
 
@@ -42,9 +138,16 @@ parentizar s res = if null res then s else s++"("++(join "," res)++")"
 
 instance Show Formula where
 -- Operadores lógicos: "¬","∧","∨","⊃","∀","∃"
-    show = error "Falta implementar."
-
+    show = recFormula
+				(\nombre terminos -> parentizar ((map toUpper) nombre)  (map show terminos))
+				(\formula resultado -> "¬" ++ (if (not (esLiteral formula)) then "(" ++ resultado ++ ")" else resultado))
+				(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ "∧" ++ resultado2 ++ ")")
+				(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ "∨" ++ resultado2 ++ ")")
+				(\formula1 formula2 resultado1 resultado2 -> "(" ++ resultado1 ++ "⊃" ++ resultado2 ++ ")")
+				(\formula nombre resultado -> "∀" ++ nombre ++ "." ++ resultado)
+				(\formula nombre resultado -> "∃" ++ nombre ++ "." ++ resultado)
 --Ejemplo: A "x" (Imp (Pred "p" [Var "x"]) (Pred "p" [Var "x"])) se ve como ∀X.(P(X)⊃P(X))
+--CONSULTAR
 
 --eliminarImplicaciones :: Dar tipo e implementar.
 
@@ -61,12 +164,12 @@ data Interpretacion a = I {fTerm :: (Nombre->[a]->a), fPred :: (Nombre->[a]->Boo
 ejemploNat::Interpretacion Int
 ejemploNat = I fTerminos fPredicados where
   fTerminos nombreF | nombreF == "0" = const 0
-		    | nombreF == "suc" = \xs -> head xs + 1
-		    | nombreF == "suma" = sum
+            | nombreF == "suc" = \xs -> head xs + 1
+            | nombreF == "suma" = sum
   fPredicados nombreP | nombreP == "esCero" = \xs -> head xs == 0
-		      | nombreP == "esPar" = \xs -> mod (head xs) 2 == 0
-		      | nombreP == "mayor" = \xs -> (head xs) > (head (tail xs))
-		      | nombreP == "menor" = \xs -> (head xs) < (head (tail xs))
+              | nombreP == "esPar" = \xs -> mod (head xs) 2 == 0
+              | nombreP == "mayor" = \xs -> (head xs) > (head (tail xs))
+              | nombreP == "menor" = \xs -> (head xs) < (head (tail xs))
 
 --Proyectores (ya están predefinidos).
 {-
