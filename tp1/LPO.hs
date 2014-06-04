@@ -161,7 +161,8 @@ actualizarAsignacion nombreNuevo valor asignacion = (\nombre -> if (nombre == no
 --Se usa una asignación de valores a las variables libres. Pueden usar recursión explícita, pero aclaren por qué no encaja bien en fold ni rec.
 --Se puede hacer con fold cambiando el orden de los parámetros (flip), pero no es natural/sencillo. ¿por qué?
 
-{-vale::Eq a =>Interpretacion a -> [a] -> Asignacion a -> Formula -> Bool
+{-
+vale::Eq a =>Interpretacion a -> [a] -> Asignacion a -> Formula -> Bool
 vale interpretacion dominio asignacion = foldFormula
                                                 (\nombre terminos -> (fPredicados intepretacion nombre) (map (evaluar asignacion (fTerminos interpretacion)) terminos))
                                                 not
