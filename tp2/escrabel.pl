@@ -85,17 +85,36 @@ inicialDe(t(_,I,_,_,_,_), I).
 
 % fichasUtilizadas(+Matriz,-Fichas) - Es importante contar sólo las celdas que no sean variables.
 fichasUtilizadas([], []).
-fichasUtilizadas([PrimerFila|RestoFilas], Fichas) :- soloFichas(PrimerFila, FichasPrimerFila), append(FichasPrimerFila, FichasSinPrimerFila, Fichas),
-													 fichasUtilizadas(RestoFilas, FichasSinPrimerFila).
+fichasUtilizadas([PrimerFila|RestoFilas], Fichas) :- soloFichas(PrimerFila, FichasPrimerFila),
+													 fichasUtilizadas(RestoFilas, FichasSinPrimerFila),
+													 append(FichasPrimerFila, FichasSinPrimerFila, Fichas).
 
 % soloFichas(+Fila, -Fichas) 
 soloFichas([], []).
 soloFichas([F|Resto], Fichas) :- var(F), soloFichas(Resto, Fichas).
 soloFichas([F|Resto], Fichas) :- atom(F), append(FichasSinF, [F], Fichas), soloFichas(Resto, FichasSinF), !.
 
-% CONSULTAR. POR QUÉ HACE FALTA !.
+% CONSULTAR. POR QUÉ HACE FALTA '!'.
 
 % fichasQueQuedan(+Matriz, -Fichas)
+fichasQueQuedan(Matriz, Fichas) :- fichasUtilizadas(Matriz, Utilizadas), append(Utilizadas, Fichas, Subtotal), fichas(Todas), equal(Todas, Subtotal), !.
+
+%?- fichasQueQuedan([[a]], Z), fichas(Z).
+%false.
+%?- fichasQueQuedan([[]], Z), fichas(Z).
+%Z = [a, a, a, a, a, a, a, a, a|...].
+%Para matrices con más fichas que las existentes, puede colgarse.
+
+% http://stackoverflow.com/questions/2710479/prolog-program-to-find-equality-of-two-lists-in-any-order
+isSubset([],_).
+isSubset([H|T],Y):-
+    member(H,Y),
+    select(H,Y,Z),
+    isSubset(T,Z).
+% equal(?X, +Y)
+equal(X,Y):-
+    isSubset(X,Y),
+    isSubset(Y,X).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para buscar una letra (con sutiles diferencias) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,6 +123,20 @@ soloFichas([F|Resto], Fichas) :- atom(F), append(FichasSinF, [F], Fichas), soloF
 letraEnPosicion(M,(X,Y),L) :- nth0(Y,M,F), nth0(X,F,L).
 
 % buscarLetra(+Letra,+Matriz,?Posicion) - Sólo tiene éxito si en Posicion ya está la letra o un *. No unifica con variables.
+buscarLetra(Letra, Matriz, Posicion) :- letraEnPosicion(Matriz, Posicion, QuizasLetra), atom(QuizasLetra), QuizasLetra = Letra.
+buscarLetra(Letra, Matriz, Posicion) :- letraEnPosicion(Matriz, Posicion, QuizasLetra), atom(QuizasLetra), QuizasLetra = '*'.
+
+%?- buscarLetra(b, [[a,b,b]], P).
+%P = (1, 0) ;
+%P = (2, 0) ;
+%false.
+%?- buscarLetra(b, [[a,b,G,b]], P).
+%P = (1, 0) ;
+%P = (3, 0) ;
+%false.
+
+cantFilas(Matriz, F) :- length(Matriz, F).
+cantColumnas([PrimeraFila|DemasFilas], C) :- length(PrimeraFila, C).
 
 % ubicarLetra(+Letra,+Matriz,?Posicion,+FichasDisponibles,-FichasRestantes) - La matriz puede estar parcialmente instanciada.
 %El * puede reemplazar a cualquier letra. Puede ubicarla donde había una variable.
@@ -112,6 +145,49 @@ letraEnPosicion(M,(X,Y),L) :- nth0(Y,M,F), nth0(X,F,L).
 % Ejemplo: tablero2(T), matrizDe(T,M), ubicarPalabra([s,i], M, I, horizontal) -> se puede ubicar 'si' horizontalmente de 4 formas distintas
 % M = [[s, i, -], [-, -, -], [-, -, -]] ; M = [[s, *, -], [-, -, -], [-, -, -]] ; M = [[*, i, -], [-, -, -], [-, -, -]] ; M = [[*, *, -], [-, -, -], [-, -, -]] ; 
 % donde los '-' representan variables, e I es siempre (0,0), ya que es la primera palabra de este tablero.
+ubicarLetra(L, M, P, FD, FR) :- member(L, FD), select(L, FD, FR), buscarLetra(L, M, P).
+ubicarLetra(L, M, P, FD, FR) :- member(L, FD), select(L, FD, FR), letraEnPosicion(M, P, QuizasL), var(QuizasL).
+
+
+%?- matriz(2,3,M), letraEnPosicion(M, (0,0), a), ubicarLetra(b, M, P, [a,a,b], FR).
+%M = [[a, _G478, _G481], [_G487, _G490, _G493]],
+%P = (1, 0),
+%FR = [a, a] ;
+%M = [[a, _G478, _G481], [_G487, _G490, _G493]],
+%P = (2, 0),
+%FR = [a, a] ;
+%M = [[a, _G478, _G481], [_G487, _G490, _G493]],
+%P = (0, 1),
+%FR = [a, a] ;
+%M = [[a, _G478, _G481], [_G487, _G490, _G493]],
+%P = (1, 1),
+%FR = [a, a] ;
+%M = [[a, _G478, _G481], [_G487, _G490, _G493]],
+%P = (2, 1),
+%FR = [a, a] ;
+%	false.
+
+%?- matriz(2,3,M), letraEnPosicion(M, (0,0), a), ubicarLetra(a, M, P, [a,b], FR).
+%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
+%P = (0, 0),
+%FR = [b] ;
+%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
+%P = (1, 0),
+%FR = [b] ;
+%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
+%P = (2, 0),
+%FR = [b] ;
+%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
+%P = (0, 1),
+%FR = [b] ;
+%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
+%P = (1, 1),
+%FR = [b] ;
+%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
+%P = (2, 1),
+%FR = [b] ;
+%false.
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para buscar una palabra (con sutiles diferencias) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
