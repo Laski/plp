@@ -1,3 +1,25 @@
+%matriz(0,0,[]) == True
+%matriz(1,1,Mat)
+
+%?- siguiente(horizontal, (3,5), D).
+%D = (4, 5).
+%?- siguiente(vertical, (3,5), D).
+%D = (3, 6).
+
+%?- buscarLetra(b, [[a,b,b]], P).
+%P = (1, 0) ;
+%P = (2, 0) ;
+%false.
+%?- buscarLetra(b, [[a,b,G,b]], P).
+%P = (1, 0) ;
+%P = (3, 0) ;
+%false.
+%?- buscarLetra(b, [[a,b,*,b]], P).
+%P = (1, 0) ;
+%P = (3, 0) ;
+%P = (2, 0) ;
+%false.
+
 [1]  ?- matriz(2,3,M), ubicarPalabra([h,o,l,a], M, I, D).
 false.
 
@@ -36,3 +58,16 @@ M = [[_G4142, _G4145, _G4148, _G4151], [_G4157, _G4160, _G4163, _G4166], [_G4172
 I = (0, 3),
 D = horizontal ;
 false.
+
+
+[1]  ?- matriz(1,4,M), tableroValido(M, (0,0), [(0,0), (0,3)], [], [], []).
+false.
+
+[1]  ?- matriz(1,4,M), tableroValido(M, (0,0), [(0,0), (0,1)], [], [], []).
+false.
+
+[1]  ?- matriz(1,4,M), tableroValido(M, (0,0), [(0,0), (1,0)], [], [], []).
+M = [[_G2768, _G2771, _G2774, _G2777]] .
+
+[1]  ?- matriz(1,4,M), tableroValido(M, (0,0), [(0,0), (1,0)], [], [(1,0)], []).
+M = [[_G2780, _G2783, _G2786, _G2789]] .

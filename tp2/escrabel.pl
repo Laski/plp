@@ -48,13 +48,13 @@ fichas(FS) :- replicar(12,a,A), replicar(2,b,B), replicar(4,c,C), replicar(5,d,D
 matriz(0, M, []).
 matriz(N, M, [PrimerFila|RestoFilas]) :- N > 0, NMenosUno is N-1, length(PrimerFila, M), matriz(NMenosUno, M, RestoFilas).
 
-%matriz(0,0,[]) == True
-%matriz(1,1,Mat)
-
 %CONSULTAR: DEVUELVE SIEMPRE FALSE AL FINAL.
 
 %Pueden usar esto, o comentarlo si viene incluido en su versión de SWI-Prolog.
 all_different(L) :- list_to_set(L,L).
+
+cantFilas(Matriz, F) :- length(Matriz, F).
+cantColumnas([PrimeraFila|DemasFilas], C) :- length(PrimeraFila, C).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados sobre posiciones en una matriz %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
@@ -66,12 +66,6 @@ enRango([F|FS],(X,Y)) :- 0 =< X, 0 =< Y, length(F, L1), X < L1, length(FS,L2), Y
 % siguiente(?Direccion, +Origen, ?Destino)
 siguiente(vertical, (X, Y), D) :- YM1 is Y+1, D = (X, YM1).
 siguiente(horizontal, (X, Y), D) :- XM1 is X+1, D = (XM1, Y).
-
-%?- siguiente(horizontal, (3,5), D).
-%D = (4, 5).
-%?- siguiente(vertical, (3,5), D).
-%D = (3, 6).
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Proyectores del tablero %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
@@ -90,9 +84,9 @@ fichasUtilizadas([PrimerFila|RestoFilas], Fichas) :- soloFichas(PrimerFila, Fich
 													 append(FichasPrimerFila, FichasSinPrimerFila, Fichas).
 
 % soloFichas(+Fila, -Fichas) 
-soloFichas([], []).
-soloFichas([F|Resto], Fichas) :- var(F), soloFichas(Resto, Fichas).
-soloFichas([F|Resto], Fichas) :- atom(F), append(FichasSinF, [F], Fichas), soloFichas(Resto, FichasSinF), !.
+	soloFichas([], []).
+	soloFichas([F|Resto], Fichas) :- var(F), soloFichas(Resto, Fichas).
+	soloFichas([F|Resto], Fichas) :- atom(F), append(FichasSinF, [F], Fichas), soloFichas(Resto, FichasSinF), !.
 
 % CONSULTAR. POR QUÉ HACE FALTA '!'.
 
@@ -116,7 +110,6 @@ equal(X,Y):-
     isSubset(X,Y),
     isSubset(Y,X).
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para buscar una letra (con sutiles diferencias) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % letraEnPosicion(+Matriz,?Posicion,?Letra) - Letra es lo que hay en Posicion (X,Y), ya sea variable, * o una letra propiamente dicha.
@@ -125,23 +118,6 @@ letraEnPosicion(M,(X,Y),L) :- nth0(Y,M,F), nth0(X,F,L).
 % buscarLetra(+Letra,+Matriz,?Posicion) - Sólo tiene éxito si en Posicion ya está la letra o un *. No unifica con variables.
 buscarLetra(Letra, Matriz, Posicion) :- letraEnPosicion(Matriz, Posicion, QuizasLetra), atom(QuizasLetra), QuizasLetra = Letra.
 buscarLetra(Letra, Matriz, Posicion) :- letraEnPosicion(Matriz, Posicion, QuizasLetra), atom(QuizasLetra), QuizasLetra = '*'.
-
-%?- buscarLetra(b, [[a,b,b]], P).
-%P = (1, 0) ;
-%P = (2, 0) ;
-%false.
-%?- buscarLetra(b, [[a,b,G,b]], P).
-%P = (1, 0) ;
-%P = (3, 0) ;
-%false.
-%?- buscarLetra(b, [[a,b,*,b]], P).
-%P = (1, 0) ;
-%P = (3, 0) ;
-%P = (2, 0) ;
-%false.
-
-cantFilas(Matriz, F) :- length(Matriz, F).
-cantColumnas([PrimeraFila|DemasFilas], C) :- length(PrimeraFila, C).
 
 % ubicarLetra(+Letra,+Matriz,?Posicion,+FichasDisponibles,-FichasRestantes) - La matriz puede estar parcialmente instanciada.
 %El * puede reemplazar a cualquier letra. Puede ubicarla donde había una variable.
@@ -207,16 +183,28 @@ listarSiguientes(Posicion, Direccion, N, Celdas) :-
 	select(Posicion, Celdas, CeldasSinPosicion),
 	siguiente(Direccion, Posicion, NuevoCasillero),
 	Nm1 is N-1,
-	listarSiguientes(NuevoCasillero, Direccion, Nm1, CeldasSinPosicion), !.
-
+	listarSiguientes(NuevoCasillero, Direccion, Nm1, CeldasSinPosicion),
+	!.
 
 % celdasPalabra(+Palabra,+Matriz,-Celdas) - Similar a buscarPalabra, pero también permite ubicar letras en espacios libres. Opcional ya definida.
 celdasPalabra(Palabra, M, [C|CS]) :- ubicarPalabra(Palabra, M, C, D), buscarPalabra(Palabra, M, [C|CS], D).
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para validar el tablero y los juegos %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % tableroValido(+Matriz, +Inicial, +ListaDL, +ListaDP, +ListaTL, +ListaTP)
+tableroValido(Matriz, Inicial, DL, DP, TL, TP) :-
+	cantFilas(Matriz, F),
+	cantColumnas(Matriz, C),
+	matriz(F, C, Matriz),
+	enRango(Matriz, Inicial),
+	todasEnRango(Matriz, DL),
+	todasEnRango(Matriz, DP),
+	todasEnRango(Matriz, TL),
+	todasEnRango(Matriz, TP).
+
+%todasEnRango(+Matriz, +ListaPos)
+todasEnRango(M, []).
+todasEnRango(M, [P|PS]) :- enRango(M, P), todasEnRango(M, PS).
 
 % seCruzan(+Palabra1,+Palabra2,+Matriz)
 seCruzan(Palabra1, Palabra2, M) :- buscarPalabra(Palabra2, M, CS2,_), celdasPalabra(Palabra1, M, CS1), member(C, CS1), member(C, CS2), !.
@@ -225,9 +213,16 @@ seCruzan(Palabra1, Palabra2, M) :- buscarPalabra(Palabra2, M, CS2,_), celdasPala
 cruzaAlguna(Palabra, Anteriores, M) :- member(P, Anteriores), seCruzan(Palabra, P, M).
 
 % juegoValido(+Tablero, +Palabras)
+juegoValido((Matriz, Inicial, DL, DP, TL, TP), [P|PS]) :-
+	tableroValido(Matriz, Inicial, DL, DP, TL, TP),
+	ubicarPalabra(P, Matriz, Inicial, D),
+	juegoValidoConPalabras((Matriz, Inicial, DL, DP, TL, TP), PS, [P]).	
 
 % juegoValidoConPalabras(+Tablero, +PalabrasAUsar, +PalabrasUsadas)
-
+juegoValidoConPalabras((Matriz, I, DL, DP, TL, TP), [P|PS], PalabrasUsadas) :-
+	cruzaAlguna(P, PalabrasUsadas, Matriz),
+	append([P], PalabrasUsadas, NuevasPalabrasUsadas),
+	juegoValidoConPalabras(Tablero, PS, NuevasPalabrasUsadas).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para calcular puntajes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
