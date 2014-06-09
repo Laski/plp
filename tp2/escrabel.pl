@@ -59,7 +59,7 @@ all_different(L) :- list_to_set(L,L).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados sobre posiciones en una matriz %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 % La posición indicada está dentro del rango de la matriz del tablero
-% enRango(+Tablero, +Posicion)
+% enRango(+Matriz, +Posicion)
 enRango([F|FS],(X,Y)) :- 0 =< X, 0 =< Y, length(F, L1), X < L1, length(FS,L2), Y =< L2.
 
 %Saber si una posici ́n est ́ definida dentro del tablero, y determinar la siguiente posición, en la dirección dada (vertical u horizontal)
@@ -134,6 +134,11 @@ buscarLetra(Letra, Matriz, Posicion) :- letraEnPosicion(Matriz, Posicion, Quizas
 %P = (1, 0) ;
 %P = (3, 0) ;
 %false.
+%?- buscarLetra(b, [[a,b,*,b]], P).
+%P = (1, 0) ;
+%P = (3, 0) ;
+%P = (2, 0) ;
+%false.
 
 cantFilas(Matriz, F) :- length(Matriz, F).
 cantColumnas([PrimeraFila|DemasFilas], C) :- length(PrimeraFila, C).
@@ -146,56 +151,47 @@ cantColumnas([PrimeraFila|DemasFilas], C) :- length(PrimeraFila, C).
 % M = [[s, i, -], [-, -, -], [-, -, -]] ; M = [[s, *, -], [-, -, -], [-, -, -]] ; M = [[*, i, -], [-, -, -], [-, -, -]] ; M = [[*, *, -], [-, -, -], [-, -, -]] ; 
 % donde los '-' representan variables, e I es siempre (0,0), ya que es la primera palabra de este tablero.
 ubicarLetra(L, M, P, FD, FR) :- member(L, FD), select(L, FD, FR), buscarLetra(L, M, P).
-ubicarLetra(L, M, P, FD, FR) :- member(L, FD), select(L, FD, FR), letraEnPosicion(M, P, QuizasL), var(QuizasL).
-
+ubicarLetra(L, M, P, FD, FR) :- member(L, FD), select(L, FD, FR), letraEnPosicion(M, P, L).
 
 %?- matriz(2,3,M), letraEnPosicion(M, (0,0), a), ubicarLetra(b, M, P, [a,a,b], FR).
-%M = [[a, _G478, _G481], [_G487, _G490, _G493]],
-%P = (1, 0),
-%FR = [a, a] ;
-%M = [[a, _G478, _G481], [_G487, _G490, _G493]],
-%P = (2, 0),
-%FR = [a, a] ;
-%M = [[a, _G478, _G481], [_G487, _G490, _G493]],
-%P = (0, 1),
-%FR = [a, a] ;
-%M = [[a, _G478, _G481], [_G487, _G490, _G493]],
-%P = (1, 1),
-%FR = [a, a] ;
-%M = [[a, _G478, _G481], [_G487, _G490, _G493]],
-%P = (2, 1),
-%FR = [a, a] ;
-%	false.
-
+% TESTEAR
 %?- matriz(2,3,M), letraEnPosicion(M, (0,0), a), ubicarLetra(a, M, P, [a,b], FR).
-%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
-%P = (0, 0),
-%FR = [b] ;
-%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
-%P = (1, 0),
-%FR = [b] ;
-%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
-%P = (2, 0),
-%FR = [b] ;
-%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
-%P = (0, 1),
-%FR = [b] ;
-%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
-%P = (1, 1),
-%FR = [b] ;
-%M = [[a, _G472, _G475], [_G481, _G484, _G487]],
-%P = (2, 1),
-%FR = [b] ;
-%false.
-
-
+% TESTEAR
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para buscar una palabra (con sutiles diferencias) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Auxiliar (opcional), a definir para ubicarPalabra
 % ubicarPalabraConFichas(+Palabra,+Matriz,?Inicial,?Direccion,+FichasDisponibles) - La matriz puede estar parcialmente instanciada.
+ubicarPalabraConFichas([], Matriz, Inicial, Direccion, FichasDisponibles).
+ubicarPalabraConFichas([Letra|RestoPalabra], Matriz, Inicial, Direccion, FichasDisponibles) :- 
+	ubicarLetra(Letra, Matriz, Inicial, FichasDisponibles, FichasRestantes),
+	siguiente(Direccion, Inicial, NuevoInicial),
+	ubicarPalabraConFichas(RestoPalabra, Matriz, NuevoInicial, Direccion, FichasRestantes).
 
 % ubicarPalabra(+Palabra,+Matriz,?Inicial,?Direccion) - La matriz puede estar parcialmente instanciada.
+ubicarPalabra(Palabra, Matriz, Inicial, Direccion) :- 
+	fichasQueQuedan(Matriz, FichasDisponibles),
+	ubicarPalabraConFichas(Palabra, Matriz, Inicial, Direccion, FichasDisponibles).
+
+% pertenece(+Matriz, ?Posicion). - Instancia en Posicion todas las posibles posiciones de una Matriz.
+pertenece(Matriz, Posicion) :- matrizALista(Matriz, ListaDePosiciones), member(Posicion, ListaDePosiciones).
+
+% matrizALista(+Matriz, -Lista).
+matrizALista([], []).
+matrizALista([Fila|RestoFilas], Lista) :-
+	cantFilas([Fila|RestoFilas], F),
+	cantColumnas([Fila|RestoFilas], C),
+	Fm1 is F-1, Cm1 is C-1,
+	listaDeTuplas(Fm1, Cm1, EstaFila),
+	matrizALista(RestoFilas, ListaResto),
+	append(ListaResto, EstaFila, Lista).
+
+% listaDeTuplas(+X, +Y, ?Lista).
+listaDeTuplas(X, -1, []) :- !.
+listaDeTuplas(X, Y, [Tupla|RestoTuplas]) :- (X, Y) = Tupla, Ym1 is Y-1, listaDeTuplas(X, Ym1, RestoTuplas).
+
+%cantFilas(Matriz, F)
+%cantColumnas(Matriz, C)
 
 % buscarPalabra(+Palabra,+Matriz,?Celdas, ?Direccion) - Sólo tiene éxito si la palabra ya estaba en la matriz.
 
