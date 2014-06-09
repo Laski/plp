@@ -219,10 +219,11 @@ juegoValido((Matriz, Inicial, DL, DP, TL, TP), [P|PS]) :-
 	juegoValidoConPalabras((Matriz, Inicial, DL, DP, TL, TP), PS, [P]).	
 
 % juegoValidoConPalabras(+Tablero, +PalabrasAUsar, +PalabrasUsadas)
+juegoValidoConPalabras(Tablero, [], PalabrasUsadas).
 juegoValidoConPalabras((Matriz, I, DL, DP, TL, TP), [P|PS], PalabrasUsadas) :-
 	cruzaAlguna(P, PalabrasUsadas, Matriz),
 	append([P], PalabrasUsadas, NuevasPalabrasUsadas),
-	juegoValidoConPalabras(Tablero, PS, NuevasPalabrasUsadas).
+	juegoValidoConPalabras((Matriz, I, DL, DP, TL, TP), PS, NuevasPalabrasUsadas).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para calcular puntajes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
