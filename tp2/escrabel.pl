@@ -150,7 +150,7 @@ cantColumnas([PrimeraFila|DemasFilas], C) :- length(PrimeraFila, C).
 % Ejemplo: tablero2(T), matrizDe(T,M), ubicarPalabra([s,i], M, I, horizontal) -> se puede ubicar 'si' horizontalmente de 4 formas distintas
 % M = [[s, i, -], [-, -, -], [-, -, -]] ; M = [[s, *, -], [-, -, -], [-, -, -]] ; M = [[*, i, -], [-, -, -], [-, -, -]] ; M = [[*, *, -], [-, -, -], [-, -, -]] ; 
 % donde los '-' representan variables, e I es siempre (0,0), ya que es la primera palabra de este tablero.
-ubicarLetra(L, M, P, FD, FR) :- member(L, FD), select(L, FD, FR), buscarLetra(L, M, P).
+ubicarLetra(L, M, P, FD, FR) :- FR = FD, buscarLetra(L, M, P).
 ubicarLetra(L, M, P, FD, FR) :- member(L, FD), select(L, FD, FR), letraEnPosicion(M, P, L).
 
 %?- matriz(2,3,M), letraEnPosicion(M, (0,0), a), ubicarLetra(b, M, P, [a,a,b], FR).
@@ -173,6 +173,8 @@ ubicarPalabra(Palabra, Matriz, Inicial, Direccion) :-
 	fichasQueQuedan(Matriz, FichasDisponibles),
 	ubicarPalabraConFichas(Palabra, Matriz, Inicial, Direccion, FichasDisponibles).
 
+%%%%%%%%%%%%%%%%%%%
+
 % pertenece(+Matriz, ?Posicion). - Instancia en Posicion todas las posibles posiciones de una Matriz.
 pertenece(Matriz, Posicion) :- matrizALista(Matriz, ListaDePosiciones), member(Posicion, ListaDePosiciones).
 
@@ -190,10 +192,23 @@ matrizALista([Fila|RestoFilas], Lista) :-
 listaDeTuplas(X, -1, []) :- !.
 listaDeTuplas(X, Y, [Tupla|RestoTuplas]) :- (X, Y) = Tupla, Ym1 is Y-1, listaDeTuplas(X, Ym1, RestoTuplas).
 
-%cantFilas(Matriz, F)
-%cantColumnas(Matriz, C)
+%%%%%%%%%%%%%%%%%%%
 
-% buscarPalabra(+Palabra,+Matriz,?Celdas, ?Direccion) - Sólo tiene éxito si la palabra ya estaba en la matriz.
+% buscarPalabra(+Palabra,+Matriz, ?Celdas, ?Direccion) - Sólo tiene éxito si la palabra ya estaba en la matriz.
+buscarPalabra(Palabra, Matriz, Celdas, Direccion) :-
+	ubicarPalabraConFichas(Palabra, Matriz, Inicial, Direccion, []),
+	length(Palabra, Cantidad),
+	listarSiguientes(Inicial, Direccion, Cantidad, Celdas).
+
+% listarSiguientes(+Inicial, ?Direccion, +Cantidad, ?Celdas) - Tiene éxito si Celdas es una lista de los siguientes 'Cantidad' posiciones a partir de un inicial.
+listarSiguientes(Posicion, Direccion, 0, []).
+listarSiguientes(Posicion, Direccion, N, Celdas) :-
+	member(Posicion, Celdas),
+	select(Posicion, Celdas, CeldasSinPosicion),
+	siguiente(Direccion, Posicion, NuevoCasillero),
+	Nm1 is N-1,
+	listarSiguientes(NuevoCasillero, Direccion, Nm1, CeldasSinPosicion), !.
+
 
 % celdasPalabra(+Palabra,+Matriz,-Celdas) - Similar a buscarPalabra, pero también permite ubicar letras en espacios libres. Opcional ya definida.
 celdasPalabra(Palabra, M, [C|CS]) :- ubicarPalabra(Palabra, M, C, D), buscarPalabra(Palabra, M, [C|CS], D).
