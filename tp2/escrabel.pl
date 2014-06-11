@@ -200,11 +200,23 @@ tableroValido(Matriz, Inicial, DL, DP, TL, TP) :-
 	todasEnRango(Matriz, DL),
 	todasEnRango(Matriz, DP),
 	todasEnRango(Matriz, TL),
-	todasEnRango(Matriz, TP).
+	todasEnRango(Matriz, TP),
+	noSeIncluyen(DL, DP, TL, TP).
 
-%todasEnRango(+Matriz, +ListaPos)
+% todasEnRango(+Matriz, +ListaPos)
 todasEnRango(M, []).
 todasEnRango(M, [P|PS]) :- enRango(M, P), todasEnRango(M, PS).
+
+% noSeIncluyen(+L1, +L2, +L3, +L4) - Falla si algún par de listas tiene intersección no vacía.
+noSeIncluyen(L1, L2, L3, L4) :- 
+	not(hayInterseccion(L1, L2)),
+	not(hayInterseccion(L1, L3)),
+	not(hayInterseccion(L1, L4)),
+	not(hayInterseccion(L2, L3)),
+	not(hayInterseccion(L2, L4)),
+	not(hayInterseccion(L3, L4)).
+
+hayInterseccion(L1, L2) :- member(C, L1), member(C, L2).
 
 % seCruzan(+Palabra1,+Palabra2,+Matriz)
 seCruzan(Palabra1, Palabra2, M) :- buscarPalabra(Palabra2, M, CS2,_), celdasPalabra(Palabra1, M, CS1), member(C, CS1), member(C, CS2), !.
@@ -213,23 +225,70 @@ seCruzan(Palabra1, Palabra2, M) :- buscarPalabra(Palabra2, M, CS2,_), celdasPala
 cruzaAlguna(Palabra, Anteriores, M) :- member(P, Anteriores), seCruzan(Palabra, P, M).
 
 % juegoValido(+Tablero, +Palabras)
-juegoValido((Matriz, Inicial, DL, DP, TL, TP), [P|PS]) :-
+juegoValido(t(Matriz, Inicial, DL, DP, TL, TP), [P|PS]) :-
 	tableroValido(Matriz, Inicial, DL, DP, TL, TP),
 	ubicarPalabra(P, Matriz, Inicial, D),
-	juegoValidoConPalabras((Matriz, Inicial, DL, DP, TL, TP), PS, [P]).	
+	juegoValidoConPalabras(t(Matriz, Inicial, DL, DP, TL, TP), PS, [P]).	
 
 % juegoValidoConPalabras(+Tablero, +PalabrasAUsar, +PalabrasUsadas)
-juegoValidoConPalabras(Tablero, [], PalabrasUsadas).
-juegoValidoConPalabras((Matriz, I, DL, DP, TL, TP), [P|PS], PalabrasUsadas) :-
+juegoValidoConPalabras(_, [], _).
+juegoValidoConPalabras(t(Matriz, I, DL, DP, TL, TP), [P|PS], PalabrasUsadas) :-
 	cruzaAlguna(P, PalabrasUsadas, Matriz),
 	append([P], PalabrasUsadas, NuevasPalabrasUsadas),
-	juegoValidoConPalabras((Matriz, I, DL, DP, TL, TP), PS, NuevasPalabrasUsadas).
+	juegoValidoConPalabras(t(Matriz, I, DL, DP, TL, TP), PS, NuevasPalabrasUsadas).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para calcular puntajes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % puntajePalabra(+Palabra, +Tablero, -Puntos)
+puntajePalabra(Palabra, t(Matriz,_,DL,DP,TL,TP), Puntos) :-
+	buscarPalabra(Palabra, Matriz, Celdas, Direccion),
+	calcularPuntajeCeldas(Palabra, Celdas, DL, TL, SubPuntaje),
+	duplicarSiIncluye(Celdas, DP, SubPuntaje, PuntajeDuplicado),
+	triplicarSiIncluye(Celdas, TP, PuntajeDuplicado, Puntos).
+
+% calcularPuntajeCeldas(+Palabra, +Celdas, +DL, +TL, -Puntaje)
+calcularPuntajeCeldas([], [], _, _, 0).
+calcularPuntajeCeldas([L|LS], [C|CS], DL, TL, Puntaje) :-
+	puntaje(L, PuntajeLetra),
+	not(member(C, DL)),
+	not(member(C, TL)),
+	calcularPuntajeCeldas(LS, CS, DL, TL, Subtotal),
+	Puntaje is PuntajeLetra + Subtotal.
+calcularPuntajeCeldas([L|LS], [C|CS], DL, TL, Puntaje) :-
+	puntaje(L, PuntajeLetra),
+	member(C, DL),
+	calcularPuntajeCeldas(LS, CS, DL, TL, Subtotal),
+	Puntaje is PuntajeLetra*2 + Subtotal.
+calcularPuntajeCeldas([L|LS], [C|CS], DL, TL, Puntaje) :-
+	puntaje(L, PuntajeLetra),
+	member(C, TL),
+	calcularPuntajeCeldas(LS, CS, DL, TL, Subtotal),
+	Puntaje is PuntajeLetra*3 + Subtotal.
+
+duplicarSiIncluye(Celdas, DP, SubPuntaje, Puntaje) :-
+	not(hayInterseccion(Celdas, DP)),
+	Puntaje is SubPuntaje.
+duplicarSiIncluye(Celdas, DP, SubPuntaje, Puntaje) :-
+	hayInterseccion(Celdas, DP),
+	Puntaje is SubPuntaje * 2.
+
+triplicarSiIncluye(Celdas, TP, SubPuntaje, Puntaje) :-
+	not(hayInterseccion(Celdas, TP)),
+	Puntaje is SubPuntaje.
+triplicarSiIncluye(Celdas, TP, SubPuntaje, Puntaje) :-
+	hayInterseccion(Celdas, TP),
+	Puntaje is SubPuntaje * 3.
 
 % puntajeJuego(+Tablero, +Palabras, -Puntaje)
+puntajeJuego(Tablero, Palabras, Puntaje) :-
+	juegoValido(Tablero, Palabras),
+	puntajeJuegoValido(Tablero, Palabras, Puntaje).
+
+puntajeJuegoValido(_, [], 0).
+puntajeJuegoValido(Tablero, [P|PS], Puntaje) :-
+	puntajePalabra(P, Tablero, PuntajePalabra),
+	puntajeJuegoValido(Tablero, PS, PuntajeResto),
+	Puntaje is PuntajePalabra + PuntajeResto.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para copiar estructuras (HECHOS) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -244,14 +303,16 @@ copiaFila([],[]).
 copiaFila([C|CS1],[C|CS2]) :- nonvar(C), copiaFila(CS1,CS2).
 copiaFila([C|CS1],[_|CS2]) :- var(C), copiaFila(CS1,CS2).
 
-
 % copiaTablero(+Tablero,-Copia)
 copiaTablero(t(M1, I, DLS, DPS, TLS, TPS),t(M2, I, DLS, DPS, TLS, TPS)) :- copiaMatriz(M1,M2).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Para obtener una solución óptima %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % juegoPosible(+TableroInicial,+Palabras,-TableroCompleto,-Puntaje)
-
+juegoPosible(TableroInicial, Palabras, TableroCompleto, Puntaje) :-
+	copiaTablero(TableroInicial, Copia),
+	puntajeJuego(Copia, Palabras, Puntaje),
+	TableroCompleto = Copia.
 
 % juegoOptimo(+TableroInicial,+Palabras,-TableroCompleto,-Puntaje) - La conversa de una solución suele ser solución a menos que los premios favorezcan a una de ellas.
 
