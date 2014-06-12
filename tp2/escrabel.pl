@@ -305,21 +305,37 @@ juegoPosible(TableroInicial, Palabras, TableroCompleto, Puntaje) :-
 juegoOptimo(TableroInicial, Palabras, TableroCompleto, Puntaje) :-
 	findall(UnJuegoPosible, juegoPosible(TableroInicial, Palabras, UnJuegoPosible, Puntaje), JuegosPosibles),
 	esElPuntajeMaximo(JuegosPosibles, Palabras, PuntajeMaximo),
-	tieneEsePuntaje(JuegosPosibles, Palabras, PuntajeMaximo, TableroCompleto).
+	tieneEsePuntaje(JuegosPosibles, Palabras, PuntajeMaximo, TableroCompleto),
+    Puntaje = PuntajeMaximo.
 
 % esElPuntajeMaximo(+JuegosPosibles, +Palabras, ?PuntajeMaximo) :-
-esElPuntajeMaximo([J], Palabras, PuntajeMaximo) :-
-	puntajeJuego(J, Palabras, PuntajeMaximo).
+%Muy importantes los cut acá, sino una vez encontrado el máximo vuelve a buscar sobre los mismos casos.
+esElPuntajeMaximo([], Palabras, PuntajeMaximo) :-
+	PuntajeMaximo = 0, !.
 esElPuntajeMaximo([J|JS], Palabras, PuntajeMaximo) :-
 	puntajeJuego(J, Palabras, Puntaje),
 	esElPuntajeMaximo(JS, Palabras, SubMaximo),
 	Puntaje >= SubMaximo,
-	PuntajeMaximo = Puntaje.
+	PuntajeMaximo = Puntaje, !.
 esElPuntajeMaximo([J|JS], Palabras, PuntajeMaximo) :-
 	puntajeJuego(J, Palabras, Puntaje),
 	esElPuntajeMaximo(JS, Palabras, SubMaximo),
 	Puntaje < SubMaximo,
-	PuntajeMaximo = SubMaximo.
+	PuntajeMaximo = SubMaximo, !.
+
+
+esElMaximo([J], PuntajeMaximo) :-
+	J = PuntajeMaximo, !.
+esElMaximo([J|JS], PuntajeMaximo) :-
+	Puntaje = J,
+	esElMaximo(JS, SubMaximo),
+	Puntaje >= SubMaximo,
+	PuntajeMaximo = Puntaje, !.
+esElMaximo([J|JS], PuntajeMaximo) :-
+	Puntaje = J,
+	esElMaximo(JS, SubMaximo),
+	Puntaje < SubMaximo,
+	PuntajeMaximo = SubMaximo, !.
 
 % tieneEsePuntaje(+JuegosPosibles, +Palabras, +Puntaje, -TableroCompleto)
 tieneEsePuntaje(JuegosPosibles, Palabras, Puntaje, TableroCompleto) :-
@@ -376,3 +392,8 @@ testJuegoOptimo4 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,n],[p,e
 testJuegoOptimo5 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,60)|_].
 testJuegoOptimo6 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z],[z,a,r]],CT,Puntos),XS), length(XS,12),XS=[(_,91)|_].
 testJuegoOptimo :- testJuegoOptimo1, testJuegoOptimo2, testJuegoOptimo3, testJuegoOptimo4, testJuegoOptimo5, testJuegoOptimo6.
+
+
+% test propios.
+
+% TEST 07 - 
