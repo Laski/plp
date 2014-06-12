@@ -17,7 +17,7 @@ puntaje(L, 2) :- member(L, [d, g]).
 puntaje(L, 3) :- member(L, [b, c, m, p]).
 puntaje(L, 4) :- member(L, [h, f, v, y]).
 puntaje(L, 5) :- member(L, [ch, q]).
-puntaje(L, 8) :- member(L, [j, ll, ñ, rr, x]).
+puntaje(L, 8) :- member(L, [j,ll, ñ, rr, x]).
 puntaje(L, 10) :- member(L, [z]).
 
 letra(L) :- puntaje(L,_).
@@ -374,7 +374,7 @@ tablero4(t(M,(2,2),[(1,1),(1,3),(3,1),(3,3)],[(0,0),(2,2),(4,4)],[(0,2),(2,0),(2
 testJuegoOptimo1 :- tablero1(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z],[z,a,r]],CT,Puntos),XS),length(XS,8),XS=[(_,92)|_].
 testJuegoOptimo2 :- tablero1(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,60)|_].
 testJuegoOptimo3 :- tablero4(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,n],[p,e,z],[a,g,u,a]],CT,Puntos),XS), length(XS,2),XS=[(_,88)|_].
-testJuegoOptimo4 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,n],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,38)|_]. %CORREGIDO POR NOS
+testJuegoOptimo4 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,n],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,44)|_].
 testJuegoOptimo5 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,60)|_].
 testJuegoOptimo6 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z],[z,a,r]],CT,Puntos),XS), length(XS,12),XS=[(_,91)|_].
 testJuegoOptimo :- testJuegoOptimo1, testJuegoOptimo2, testJuegoOptimo3, testJuegoOptimo4, testJuegoOptimo5, testJuegoOptimo6.
