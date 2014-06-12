@@ -323,20 +323,6 @@ esElPuntajeMaximo([J|JS], Palabras, PuntajeMaximo) :-
 	Puntaje < SubMaximo,
 	PuntajeMaximo = SubMaximo, !.
 
-
-esElMaximo([J], PuntajeMaximo) :-
-	J = PuntajeMaximo, !.
-esElMaximo([J|JS], PuntajeMaximo) :-
-	Puntaje = J,
-	esElMaximo(JS, SubMaximo),
-	Puntaje >= SubMaximo,
-	PuntajeMaximo = Puntaje, !.
-esElMaximo([J|JS], PuntajeMaximo) :-
-	Puntaje = J,
-	esElMaximo(JS, SubMaximo),
-	Puntaje < SubMaximo,
-	PuntajeMaximo = SubMaximo, !.
-
 % tieneEsePuntaje(+JuegosPosibles, +Palabras, +Puntaje, -TableroCompleto)
 tieneEsePuntaje(JuegosPosibles, Palabras, Puntaje, TableroCompleto) :-
 	member(TableroCompleto, JuegosPosibles),
