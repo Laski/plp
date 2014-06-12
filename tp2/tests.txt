@@ -20,6 +20,17 @@
 %P = (2, 0) ;
 %false.
 
+%?- matriz(2,3,M), letraEnPosicion(M, (0,0), a), ubicarLetra(b, M, P, [a,a,b], FR).
+% TESTEAR
+%?- matriz(2,3,M), letraEnPosicion(M, (0,0), a), ubicarLetra(a, M, P, [a,b], FR).
+% TESTEAR
+
+%?- fichasQueQuedan([[a]], Z), fichas(Z).
+%false.
+%?- fichasQueQuedan([[]], Z), fichas(Z).
+%Z = [a, a, a, a, a, a, a, a, a|...].
+%Para matrices con más fichas que las existentes, puede colgarse.
+
 [1]  ?- matriz(2,3,M), ubicarPalabra([h,o,l,a], M, I, D).
 false.
 
