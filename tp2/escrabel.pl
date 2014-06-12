@@ -119,7 +119,7 @@ letraEnPosicion(M,(X,Y),L) :- nth0(Y,M,F), nth0(X,F,L).
 buscarLetra(Letra, Matriz, Posicion) :- letraEnPosicion(Matriz, Posicion, QuizasLetra), atom(QuizasLetra), QuizasLetra = Letra.
 buscarLetra(Letra, Matriz, Posicion) :- letraEnPosicion(Matriz, Posicion, QuizasLetra), atom(QuizasLetra), QuizasLetra = '*'.
 
-% ubicarLetra(+Letra,+Matriz,?Posicion,+FichasDisponibles,-FichasRestantes) - La matriz puede estar parcialmente instanciada.
+% ubicarLetra(+Letra,+?Matriz,?Posicion,+FichasDisponibles,-FichasRestantes) - La matriz puede estar parcialmente instanciada.
 %El * puede reemplazar a cualquier letra. Puede ubicarla donde había una variable.
 %Usarlo solo fichas disponibles para que no sea horriblemente ineficiente.
 %Las posiciones donde ya estaba la letra son soluciones válidas y no gastan una ficha.
@@ -137,14 +137,14 @@ ubicarLetra(L, M, P, FD, FR) :- member(L, FD), select(L, FD, FR), letraEnPosicio
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para buscar una palabra (con sutiles diferencias) %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Auxiliar (opcional), a definir para ubicarPalabra
-% ubicarPalabraConFichas(+Palabra,+Matriz,?Inicial,?Direccion,+FichasDisponibles) - La matriz puede estar parcialmente instanciada.
+% ubicarPalabraConFichas(+Palabra,+?Matriz,?Inicial,?Direccion,+FichasDisponibles) - La matriz puede estar parcialmente instanciada.
 ubicarPalabraConFichas([], Matriz, Inicial, Direccion, FichasDisponibles).
 ubicarPalabraConFichas([Letra|RestoPalabra], Matriz, Inicial, Direccion, FichasDisponibles) :- 
 	ubicarLetra(Letra, Matriz, Inicial, FichasDisponibles, FichasRestantes),
 	siguiente(Direccion, Inicial, NuevoInicial),
 	ubicarPalabraConFichas(RestoPalabra, Matriz, NuevoInicial, Direccion, FichasRestantes).
 
-% ubicarPalabra(+Palabra,+Matriz,?Inicial,?Direccion) - La matriz puede estar parcialmente instanciada.
+% ubicarPalabra(+Palabra,+?Matriz,?Inicial,?Direccion) - La matriz puede estar parcialmente instanciada.
 ubicarPalabra(Palabra, Matriz, Inicial, Direccion) :- 
 	fichasQueQuedan(Matriz, FichasDisponibles),
 	ubicarPalabraConFichas(Palabra, Matriz, Inicial, Direccion, FichasDisponibles).
@@ -170,7 +170,7 @@ listaDeTuplas(X, Y, [Tupla|RestoTuplas]) :- (X, Y) = Tupla, Ym1 is Y-1, listaDeT
 
 %%%%%%%%%%%%%%%%%%%
 
-% buscarPalabra(+Palabra,+Matriz, ?Celdas, ?Direccion) - Sólo tiene éxito si la palabra ya estaba en la matriz.
+% buscarPalabra(+Palabra,+?Matriz, ?Celdas, ?Direccion) - Sólo tiene éxito si la palabra ya estaba en la matriz.
 buscarPalabra(Palabra, Matriz, Celdas, Direccion) :-
 	ubicarPalabraConFichas(Palabra, Matriz, Inicial, Direccion, []),
 	length(Palabra, Cantidad),
@@ -186,8 +186,8 @@ listarSiguientes(Posicion, Direccion, N, Celdas) :-
 	listarSiguientes(NuevoCasillero, Direccion, Nm1, CeldasSinPosicion),
 	!.
 
-% celdasPalabra(+Palabra,+Matriz,-Celdas) - Similar a buscarPalabra, pero también permite ubicar letras en espacios libres. Opcional ya definida.
-celdasPalabra(Palabra, M, [C|CS]) :- ubicarPalabra(Palabra, M, C, D), buscarPalabra(Palabra, M, [C|CS], D).
+% celdasPalabra(+Palabra,+Matriz,-Celdas) - Similar a buscarPalabra, pero sin la dirección.
+celdasPalabra(Palabra, M, [C|CS]) :- buscarPalabra(Palabra, M, [C|CS], _).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Predicados para validar el tablero y los juegos %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -219,18 +219,18 @@ noSeIncluyen(L1, L2, L3, L4) :-
 hayInterseccion(L1, L2) :- member(C, L1), member(C, L2).
 
 % seCruzan(+Palabra1,+Palabra2,+Matriz)
-seCruzan(Palabra1, Palabra2, M) :- buscarPalabra(Palabra2, M, CS2,_), celdasPalabra(Palabra1, M, CS1), member(C, CS1), member(C, CS2), !.
+seCruzan(Palabra1, Palabra2, M) :- buscarPalabra(Palabra2, M, CS2,D2), buscarPalabra(Palabra1, M, CS1,D1), D1 \= D2, member(C, CS1), member(C, CS2), !.
 
 % cruzaAlguna(+Palabra,+Anteriores,+Matriz)
 cruzaAlguna(Palabra, Anteriores, M) :- member(P, Anteriores), seCruzan(Palabra, P, M).
 
-% juegoValido(+Tablero, +Palabras)
+% juegoValido(+?Tablero, +Palabras)
 juegoValido(t(Matriz, Inicial, DL, DP, TL, TP), [P|PS]) :-
 	tableroValido(Matriz, Inicial, DL, DP, TL, TP),
 	ubicarPalabra(P, Matriz, Inicial, D),
 	juegoValidoConPalabras(t(Matriz, Inicial, DL, DP, TL, TP), PS, [P]).	
 
-% juegoValidoConPalabras(+Tablero, +PalabrasAUsar, +PalabrasUsadas)
+% juegoValidoConPalabras(+?Tablero, +PalabrasAUsar, +PalabrasUsadas)
 juegoValidoConPalabras(_, [], _).
 juegoValidoConPalabras(t(Matriz, I, DL, DP, TL, TP), [P|PS], PalabrasUsadas) :-
 	cruzaAlguna(P, PalabrasUsadas, Matriz),
@@ -279,7 +279,7 @@ triplicarSiIncluye(Celdas, TP, SubPuntaje, Puntaje) :-
 	hayInterseccion(Celdas, TP),
 	Puntaje is SubPuntaje * 3.
 
-% puntajeJuego(+Tablero, +Palabras, -Puntaje)
+% puntajeJuego(+?Tablero, +Palabras, -Puntaje)
 puntajeJuego(Tablero, Palabras, Puntaje) :-
 	juegoValido(Tablero, Palabras),
 	puntajeJuegoValido(Tablero, Palabras, Puntaje).
@@ -339,30 +339,30 @@ tablero4(t(M,(2,2),[(1,1),(1,3),(3,1),(3,3)],[(0,0),(2,2),(4,4)],[(0,2),(2,0),(2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Tests %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% TEST 01 - Da 1 solución de 66 puntos.
+% TEST 01 - Da 8 soluciones de 92 puntos.
 % tablero1(T), juegoOptimo(T,[[p,a,z],[p,e,z],[z,a,r]],CT,Puntos).
 %% tablero1(T), juegoPosible(T,[[p,a,z],[p,e,z],[z,a,r]],CT,66), matrizDe(CT,M), buscarPalabra([p,a,z],M,C1,_), buscarPalabra([p,e,z],M,C2,_),buscarPalabra([z,a,r],M,C3,_).
 
-% TEST 02 - Da 2 soluciones de 52 puntos:
+% TEST 02 - Da 2 soluciones de 60 puntos:
 % tablero1(T), juegoOptimo(T,[[p,a,z],[p,e,z]],CT,Puntos).
 
 % TEST 03 - Da 2 soluciones de 88 puntos:
 % tablero4(T),juegoOptimo(T,[[p,a,n],[p,e,z],[a,g,u,a]],Sol,Puntos), matrizDe(Sol,M), buscarPalabra([p,a,n],M,C1,_), buscarPalabra([p,e,z],M,C2,_),buscarPalabra([a,g,u,a],M,C3,_).
 
-% TEST 04 - Da 2 soluciones de 38 puntos:
+% TEST 04 - Da 2 soluciones de 44 puntos:
 % tablero2(T), juegoOptimo(T,[[p,a,n],[p,e,z]],CT,Puntos).
 
-% TEST 05 - Da 2 soluciones de 52 puntos, que usan *.
+% TEST 05 - Da 2 soluciones de 60 puntos, que usan *.
 % tablero2(T), juegoOptimo(T,[[p,a,z],[p,e,z]],CT,Puntos).
 
-% TEST 06 - Da 3 soluciones de 91 puntos.
+% TEST 06 - Da 12 soluciones de 91 puntos.
 % tablero2(T), juegoOptimo(T,[[p,a,z],[p,e,z],[z,a,r]],CT,Puntos).
 
 
-testJuegoOptimo1 :- tablero1(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z],[z,a,r]],CT,Puntos),XS),XS=[(_,66)].
-testJuegoOptimo2 :- tablero1(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,52)|_].
+testJuegoOptimo1 :- tablero1(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z],[z,a,r]],CT,Puntos),XS),length(XS,8),XS=[(_,92)|_].
+testJuegoOptimo2 :- tablero1(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,60)|_].
 testJuegoOptimo3 :- tablero4(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,n],[p,e,z],[a,g,u,a]],CT,Puntos),XS), length(XS,2),XS=[(_,88)|_].
-testJuegoOptimo4 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,n],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,38)|_].
-testJuegoOptimo5 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,52)|_].
-testJuegoOptimo6 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z],[z,a,r]],CT,Puntos),XS), length(XS,3),XS=[(_,91)|_].
+testJuegoOptimo4 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,n],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,44)|_].
+testJuegoOptimo5 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z]],CT,Puntos),XS), length(XS,2),XS=[(_,60)|_].
+testJuegoOptimo6 :- tablero2(T), findall((CT,Puntos),juegoOptimo(T,[[p,a,z],[p,e,z],[z,a,r]],CT,Puntos),XS), length(XS,12),XS=[(_,91)|_].
 testJuegoOptimo :- testJuegoOptimo1, testJuegoOptimo2, testJuegoOptimo3, testJuegoOptimo4, testJuegoOptimo5, testJuegoOptimo6.
