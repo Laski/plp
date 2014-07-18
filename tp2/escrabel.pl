@@ -17,7 +17,7 @@ puntaje(L, 2) :- member(L, [d, g]).
 puntaje(L, 3) :- member(L, [b, c, m, p]).
 puntaje(L, 4) :- member(L, [h, f, v, y]).
 puntaje(L, 5) :- member(L, [ch, q]).
-puntaje(L, 8) :- member(L, [j,ll, ñ, rr, x]).
+puntaje(L, 8) :- member(L, [j, ll, rr, x]).
 puntaje(L, 10) :- member(L, [z]).
 
 letra(L) :- puntaje(L,_).
@@ -36,7 +36,7 @@ replicar(N, L, [L|LS]) :- N > 0, Nm1 is N - 1, replicar(Nm1, L, LS).
 %     8 puntos: J ×1, LL ×1, Ñ ×1, RR ×1, X ×1
 %     10 puntos: Z ×1,
 fichas(FS) :- replicar(12,a,A), replicar(2,b,B), replicar(4,c,C), replicar(5,d,D), replicar(12,e,E), replicar(1,f,F), replicar(2,g,G), replicar(2,h,H),
-	      replicar(6,i,I), replicar(1,j,J), replicar(4,l,L), replicar(2,m,M), replicar(5,n,N), replicar(1, ñ, N1), replicar(9,o,O), replicar(2,p,P),
+	      replicar(6,i,I), replicar(1,j,J), replicar(4,l,L), replicar(2,m,M), replicar(5,n,N), replicar(9,o,O), replicar(2,p,P),
 	      replicar(1,q,Q), replicar(5,r,R), replicar(6,s,S), replicar(4,t,T), replicar(5,u,U), replicar(1,v,V), replicar(1,x,X), replicar(1,y,Y), replicar(1,z,Z),
 	      replicar(1,ch,CH), replicar(1,ll,LL), replicar(1,rr,RR), replicar(2,*,Blancos),
 	      flatten([A,B,C,D,E,F,G,H,I,J,L,M,N,N1,O,P,Q,R,S,T,U,V,X,Y,Z,CH,LL,RR,Blancos],FS).
